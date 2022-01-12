@@ -1,0 +1,22 @@
+{
+  "name": "mysql-toolbox",
+  "version": "0.1.0",
+  "description": "Object-oriented assistance when interacting with MySQL",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/StevoGTA/MySQL-Toolbox-JS.git"
+  },
+  "keywords": [
+    "mysql"
+  ],
+  "author": "Stevo Brock",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/StevoGTA/MySQL-Toolbox-JS/issues"
+  },
+  "homepage": "https://github.com/StevoGTA/MySQL-Toolbox-JS#readme"
+}
