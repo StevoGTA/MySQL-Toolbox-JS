@@ -3,9 +3,6 @@
   "version": "0.2.0",
   "description": "Object-oriented assistance when interacting with MySQL",
   "main": "src/index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\""
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/StevoGTA/MySQL-Toolbox-JS.git"
@@ -18,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/StevoGTA/MySQL-Toolbox-JS/issues"
   },
-  "homepage": "https://github.com/StevoGTA/MySQL-Toolbox-JS#readme"
+  "homepage": "https://github.com/StevoGTA/MySQL-Toolbox-JS#readme",
+  "dependencies": {
+    "mysql": "^2.17.1"
+  }
 }
