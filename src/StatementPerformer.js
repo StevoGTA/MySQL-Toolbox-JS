@@ -32,6 +32,12 @@ module.exports = class StatementPerformer {
 
 	// Instance methods
 	//------------------------------------------------------------------------------------------------------------------
+	isUnknownDatabaseError(error) { return error.message.startsWith('ER_BAD_DB_ERROR'); }
+
+	//------------------------------------------------------------------------------------------------------------------
+	isUnknownTableError(error) { return error.message.startsWith('ER_NO_SUCH_TABLE'); }
+
+	//------------------------------------------------------------------------------------------------------------------
 	innerJoin(...options) { return new InnerJoin(...options); }
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -94,31 +100,32 @@ module.exports = class StatementPerformer {
 		}
 
 		let	{mySQLResults, results} =
-					await this.batch(function(statementPerformer) {
-						// Compose SQL
-						var	statement =
-									'SELECT ' +
-											(Array.isArray(tableColumns) ?
-													tableColumns.map(tableColumn =>
-															tableColumn.mySQLNameWithTable).join() : tableColumns) +
-											' FROM ' + table.mySQLName;
-						if (innerJoin)
-							// Add inner join info
-							statement += ' ' + innerJoin.toString(table);
-						if (where)
-							// Add where info
-							statement += ' ' + where.toString(value => THIS.transformValue(value));
-						if (orderBy)
-							// Add order by info
-							statement += ' ' + orderBy.toString();
-						if (limit)
-							// Add limit info
-							statement += ' ' + limit.toString();
-						statement += ';';
+					await this.batch(
+							() => {
+								// Compose SQL
+								var	statement =
+											'SELECT ' +
+													(Array.isArray(tableColumns) ?
+															tableColumns.map(tableColumn =>
+																	tableColumn.mySQLNameWithTable).join() : tableColumns) +
+													' FROM ' + table.mySQLName;
+								if (innerJoin)
+									// Add inner join info
+									statement += ' ' + innerJoin.toString(table);
+								if (where)
+									// Add where info
+									statement += ' ' + where.toString(value => THIS.transformValue(value));
+								if (orderBy)
+									// Add order by info
+									statement += ' ' + orderBy.toString();
+								if (limit)
+									// Add limit info
+									statement += ' ' + limit.toString();
+								statement += ';';
 
-						// Add statement
-						THIS.statements.push(statement);
-					});
+								// Add statement
+								THIS.statements.push(statement);
+							});
 		
 		return mySQLResults;
 	}
@@ -141,7 +148,6 @@ module.exports = class StatementPerformer {
 
 		// One more level
 		this.keepOpenLevel++;
-// console.log("keepOpenLevel now: ", this.keepOpenLevel);
 
 		// Call proc
 		//	Proc may do any number of things:
@@ -149,7 +155,7 @@ module.exports = class StatementPerformer {
 		//		May not add any statements but be a general wrapper to keep the connection open, in which case we want
 		//			to capture the results, and since no statements will be added, the results will be passed through to
 		//			the caller unchanged.
-		var	results = await proc(this);
+		var	results = await proc();
 
 		// Check if have statements
 		var	mySQLResults = null;
@@ -192,13 +198,10 @@ console.log("SQL: ", sql);
 		// Done
 		if (--this.keepOpenLevel == 0) {
 			// All done
-// console.log("Destroying connection with keepOpenLevel: ", this.keepOpenLevel);
 			this.connection.destroy();
 			this.connection = null;
 			this.needUSE = true;
 		}
-		// } else
-// console.log("Not destroying connection with keepOpenLevel: ", this.keepOpenLevel);
 
 		if (!performError)
 			// Success
@@ -213,7 +216,7 @@ console.log("SQL: ", sql);
 		// Batch
 		let	{mySQLResults, results} =
 					await this.batch(
-							statementPerformer => { return (async() => {
+							() => { return (async() => {
 								// Setup
 								let	info = [];
 								for (let table of tables)
@@ -221,13 +224,13 @@ console.log("SQL: ", sql);
 									info.push({table: table, type: 'WRITE'});
 
 								// Lock tables
-								statementPerformer.queueLockTables(info);
+								this.queueLockTables(info);
 
 								// Call  proc
-								let	results = await proc(statementPerformer);
+								let	results = await proc();
 
 								// Unlock tables
-								statementPerformer.queueUnlockTables();
+								this.queueUnlockTables();
 
 								return results;
 							})()});
@@ -380,9 +383,9 @@ console.log("SQL: ", sql);
 			if (info.variable)
 				// Have variable
 				return info.variable;
-			else if ((info.tableColumn instanceof TableColumn.LONGBLOB) && (info.value instanceof Buffer))
-				// Convert data to Base64
-				return '0x' + info.value.toString("hex");
+			// else if ((info.tableColumn instanceof TableColumn.LONGBLOB) && (info.value instanceof Buffer))
+			// 	// Convert data to Base64
+			// 	return '0x' + info.value.toString("hex");
 			else
 				// Transform
 				return THIS.transformValue(info.value);
@@ -395,6 +398,9 @@ console.log("SQL: ", sql);
 		if (value == 'LAST_INSERT_ID()')
 			// All ready to go
 			return value;
+		else if (value instanceof Buffer)
+			// Convert data to Base64
+			return '0x' + value.toString("hex");
 		else if (typeof value === 'object')
 			// Object
 			return this.connection.escape(JSON.stringify(value));

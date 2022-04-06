@@ -47,24 +47,25 @@ class WhereClause {
 		} else if (options.length == 2) {
 			// Decode
 			this.tableColumn = options[0];
-			if (options.length == 2) {
-				// Check type
-				if (Array.isArray(options[1]))
-					// (tableColumn, values)
-					this.values = options[1];
-				else if (options[1] instanceof Object)
-					// (tableColumn, other tableColumn)
-					this.otherTableColumn = options[1];
-				else {
-					// (tableColumn, value)
-					this.comparison = '=';
-					this.value = options[1];
-				}
-			} else if (options.length == 3) {
-				// (tableColumn, comparison, value)
-				this.comparison = options[1];
-				this.value = options[2];
+
+			// Check type
+			if (Array.isArray(options[1]))
+				// (tableColumn, values)
+				this.values = options[1];
+			else if (options[1] instanceof Object)
+				// (tableColumn, other tableColumn)
+				this.otherTableColumn = options[1];
+			else {
+				// (tableColumn, value)
+				this.comparison = '=';
+				this.value = options[1];
 			}
+		} else if (options.length == 3) {
+			// Decode
+			// (tableColumn, comparison, value)
+			this.tableColumn = options[0];
+			this.comparison = options[1];
+			this.value = options[2];
 		} else
 			// Too much info
 			throw new Error('Where too many parameters');
