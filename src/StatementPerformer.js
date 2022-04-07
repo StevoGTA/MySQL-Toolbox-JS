@@ -196,8 +196,9 @@ console.log("SQL: ", sql);
 		}
 		
 		// Done
-		if (--this.keepOpenLevel == 0) {
+		if ((--this.keepOpenLevel == 0) || performError) {
 			// All done
+			this.keepOpenLevel = 0;
 			this.connection.destroy();
 			this.connection = null;
 			this.needUSE = true;
