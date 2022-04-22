@@ -52,16 +52,14 @@ module.exports = class InnerJoin {
 	//------------------------------------------------------------------------------------------------------------------
 	constructor(...info) {
 		// Compose clauses
-		if (info.length == 1) {
-			// Single argument
-			if (Array.isArray(info[0]))
-				// Array of options
-				this.clauses = info[0].map(options => new InnerJoinClause(options));
-			else
-				// Not enough options
-				throw new Error('InnerJoin not enough parameters');
-		} else
-			// Multiple arguments => single clause
+		if (info.length == 0)
+			// Not enough parameters
+			throw new Error('InnerJoin not enough parameters');
+		else if (Array.isArray(info[0]))
+			// Array of arrays = multiple clauses
+			this.clauses = info.map(options => new InnerJoinClause(...options));
+		else
+			// Array of parameters
 			this.clauses = [new InnerJoinClause(...info)];
 	}
 
