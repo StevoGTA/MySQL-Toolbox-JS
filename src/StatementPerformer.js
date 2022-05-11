@@ -99,6 +99,7 @@ module.exports = class StatementPerformer {
 				where = option;
 		}
 
+		// Perform
 		let	{mySQLResults, results} =
 					await this.batch(
 							() => {
@@ -131,12 +132,87 @@ module.exports = class StatementPerformer {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	async multiSelect(table, wheres, ...options) {
+		// Setup
+		let	THIS = this;
+
+		var	tableColumns = '*';
+		var	innerJoin = null;
+
+		for (let option of options) {
+			// Check option type
+			if (Array.isArray(option))
+				// Array
+				tableColumns = option;
+			else if (option instanceof InnerJoin)
+				// Inner Join
+				innerJoin = option;
+		}
+
+		// Perform
+		let	{mySQLResults, results} =
+					await this.batch(
+							() => {
+								// Compose SQL
+								let	tableColumnNames =
+											(Array.isArray(tableColumns) ?
+													tableColumns.map(tableColumn =>
+															tableColumn.mySQLNameWithTable).join() : tableColumns);
+								var	statement = "";
+
+								// Iterate wheres
+								for (var i = 0; i < (wheres.length - 1); i++) {
+									// Add SELECT
+									statement += 'SELECT count(*),' + tableColumnNames + ' FROM ' + table.mySQLName;
+
+									if (innerJoin)
+										// Add inner join info
+										statement += ' ' + innerJoin.toString(table);
+
+									// Add where info
+									statement += ' ' + wheres[i].toString(value => THIS.transformValue(value));
+
+									// Add UNION ALL
+									statement += ' UNION ALL ';
+								}
+
+								// Add last SELECT
+								statement += 'SELECT count(*),' + tableColumnNames + ' FROM ' + table.mySQLName;
+
+								if (innerJoin)
+									// Add inner join info
+									statement += ' ' + innerJoin.toString(table);
+
+								// Add where info
+								statement +=
+										' ' + wheres[wheres.length - 1].toString(value => THIS.transformValue(value));
+
+								// Finish statement
+								statement += ';';
+
+								// Add statement
+								THIS.statements.push(statement);
+							});
+		
+		return mySQLResults;
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	async count(table, where) {
 		// Perform
-		let	mySQLResults = await this.select(table, "COUNT(*)", where);
+		let	mySQLResults = await this.select(table, 'COUNT(*)', where);
 
 		return mySQLResults[0]['COUNT(*)'];
 	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async sum(table, tableColumn, innerJoin, where) {
+		// Perform
+		let	mySQLResults = await this.select(table, 'SUM(' + tableColumn.mySQLName + ') AS total', innerJoin, where);
+		
+		return mySQLResults[0].total;
+	}
+
 	//------------------------------------------------------------------------------------------------------------------
 	async batch(proc) {
 		// Setup
@@ -155,12 +231,20 @@ module.exports = class StatementPerformer {
 		//		May not add any statements but be a general wrapper to keep the connection open, in which case we want
 		//			to capture the results, and since no statements will be added, the results will be passed through to
 		//			the caller unchanged.
-		var	results = await proc();
+		//		May throw an error, and that may happen while tables are locked.
+		var	performError = null;
+		var	results = null;
+		try {
+			// Call proc
+			results = await proc();
+		} catch (error) {
+			// Error
+			performError = error;
+		}
 
 		// Check if have statements
 		var	mySQLResults = null;
-		var	performError = null;
-		if (this.statements.length > 0) {
+		if (!performError && (this.statements.length > 0)) {
 			// Compose SQL
 			let	sql = (this.needUSE ? 'USE ' + this.database + ';' : '') + this.statements.join('');
 console.log("SQL: ", sql);
@@ -199,9 +283,14 @@ console.log("SQL: ", sql);
 		if ((--this.keepOpenLevel == 0) || performError) {
 			// All done
 			this.keepOpenLevel = 0;
-			this.connection.destroy();
-			this.connection = null;
 			this.needUSE = true;
+
+			// Check if have connection
+			if (this.connection) {
+				// Cleanup
+				this.connection.destroy();
+				this.connection = null;
+			}
 		}
 
 		if (!performError)

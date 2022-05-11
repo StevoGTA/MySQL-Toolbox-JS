@@ -18,18 +18,27 @@ module.exports = class Limit {
 	//------------------------------------------------------------------------------------------------------------------
 	constructor(...options) {
 		// Validate
-		if (options.length < 1)
+		if (options.length < 2)
 			// Not enough info
 			throw new Error('Where not enough parameters');
-		else if (options.length > 1)
+		else if (options.length == 2) {
+			// Store
+			this.startIndex = options[0];
+			this.limit = options[1];
+		} else
 			// Too much info
 			throw new Error('Where too many parameters');
-
-		// Store
-		this.limit = options[0];
 	}
 
 	// Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	toString() { return 'LIMIT ' + this.limit; }
+	toString() {
+		// Check situation
+		if ((this.startIndex != null) && (this.limit != null))
+			return 'LIMIT ' + this.startIndex + ',' + this.limit;
+		else if (this.startIndex != null)
+			return 'LIMIT ' + this.startIndex + ',18446744073709551615';
+		else
+			return 'LIMIT ' + this.limit;
+	}
 }
