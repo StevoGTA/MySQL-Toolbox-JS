@@ -67,7 +67,7 @@ module.exports = class StatementPerformer {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async select(table, ...options) {
+	async select(destroyConnectionOnError, table, ...options) {
 		// Setup
 		let	THIS = this;
 
@@ -101,14 +101,16 @@ module.exports = class StatementPerformer {
 
 		// Perform
 		let	{mySQLResults, results} =
-					await this.batch(
+					await this.batch(destroyConnectionOnError,
 							() => {
 								// Compose SQL
 								var	statement =
 											'SELECT ' +
 													(Array.isArray(tableColumns) ?
-															tableColumns.map(tableColumn =>
-																	tableColumn.mySQLNameWithTable).join() : tableColumns) +
+															tableColumns
+																	.map(tableColumn => tableColumn.mySQLNameWithTable)
+																	.join() :
+															tableColumns) +
 													' FROM ' + table.mySQLName;
 								if (innerJoin)
 									// Add inner join info
@@ -132,7 +134,7 @@ module.exports = class StatementPerformer {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async multiSelect(table, wheres, ...options) {
+	async multiSelect(destroyConnectionOnError, table, wheres, ...options) {
 		// Setup
 		let	THIS = this;
 
@@ -151,7 +153,7 @@ module.exports = class StatementPerformer {
 
 		// Perform
 		let	{mySQLResults, results} =
-					await this.batch(
+					await this.batch(destroyConnectionOnError,
 							() => {
 								// Compose SQL
 								let	tableColumnNames =
@@ -200,7 +202,7 @@ module.exports = class StatementPerformer {
 	//------------------------------------------------------------------------------------------------------------------
 	async count(table, where) {
 		// Perform
-		let	mySQLResults = await this.select(table, 'COUNT(*)', where);
+		let	mySQLResults = await this.select(true, table, 'COUNT(*)', where);
 
 		return mySQLResults[0]['COUNT(*)'];
 	}
@@ -208,13 +210,13 @@ module.exports = class StatementPerformer {
 	//------------------------------------------------------------------------------------------------------------------
 	async sum(table, tableColumn, innerJoin, where) {
 		// Perform
-		let	mySQLResults = await this.select(table, 'SUM(' + tableColumn.mySQLName + ') AS total', innerJoin, where);
+		let	mySQLResults = await this.select(true, table, 'SUM(' + tableColumn.mySQLName + ') AS total', innerJoin, where);
 		
 		return mySQLResults[0].total;
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async batch(proc) {
+	async batch(destroyConnectionOnError, proc) {
 		// Setup
 		if (!this.connection) {
 			// Setup
@@ -280,7 +282,7 @@ console.log("SQL: ", sql);
 		}
 		
 		// Done
-		if ((--this.keepOpenLevel == 0) || performError) {
+		if ((--this.keepOpenLevel == 0) || (performError && destroyConnectionOnError)) {
 			// All done
 			this.keepOpenLevel = 0;
 			this.needUSE = true;
@@ -305,7 +307,7 @@ console.log("SQL: ", sql);
 	async batchLockedForWrite(tables, proc) {
 		// Batch
 		let	{mySQLResults, results} =
-					await this.batch(
+					await this.batch(true,
 							() => { return (async() => {
 								// Setup
 								let	info = [];
@@ -491,11 +493,8 @@ console.log("SQL: ", sql);
 		else if (value instanceof Buffer)
 			// Convert data to Base64
 			return '0x' + value.toString("hex");
-		else if (typeof value === 'object')
-			// Object
-			return this.connection.escape(JSON.stringify(value));
 		else
-			// Other
-			return this.connection.escape(value);
+			// The rest
+			return mysql.escape(value, true);
 	}
 }
