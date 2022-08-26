@@ -32,6 +32,13 @@ class TableColumn {
 		this.mySQLNameWithTable = (tableName ? '`' + tableName + '`.' : '') + '`' + name + '`';
 		this.options = options;
 	}
+
+	// Instance methods
+	//------------------------------------------------------------------------------------------------------------------
+	getNameAs(asName) { return this.mySQLName + (asName ? ' AS ' + asName : ''); }
+
+	//------------------------------------------------------------------------------------------------------------------
+	getNameWithTableAs(asName) { return this.mySQLNameWithTable + (asName ? ' AS ' + asName : ''); }
 };
 
 //----------------------------------------------------------------------------------------------------------------------
