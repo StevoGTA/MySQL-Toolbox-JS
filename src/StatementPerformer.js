@@ -249,7 +249,6 @@ module.exports = class StatementPerformer {
 		if (!performError && (this.statements.length > 0)) {
 			// Compose SQL
 			let	sql = (this.needUSE ? 'USE ' + this.database + ';' : '') + this.statements.join('');
-console.log("SQL: ", sql);
 			this.needUSE = false;
 			this.statements = [];
 
@@ -260,17 +259,27 @@ console.log("SQL: ", sql);
 				mySQLResults = await new Promise((resolve, reject) => {
 					// Query
 					connection.query(sql, function(error, results, fields) {
-						// Handle results
-						if (!error)
+						// Handle results.  Results come back as either an individual item or array of items.
+						//	If an array, each item can be an individual item or an array of items.
+						//	At the end of the day, if the entire results is a single, non-Array item, we return it.
+						//	Otherwise, we only want to return a (flat) array of RowDataPacket objects.
+						if (!error) {
 							// Success
-							resolve(
-									(Array.isArray(results)) ?
-											[]
-													.concat
-													.apply([], results)
-													.filter(object => object.constructor.name == "RowDataPacket") :
-											results);
-						else
+							if (!Array.isArray(results))
+								// Done
+								resolve(results);
+							
+							var	rowDataPackets = [];
+							for (let result of results.map(item => Array.isArray(item) ? item : [item]))
+								// Check this result
+								if ((result.length > 0) && (typeof result[0] == 'object') &&
+										(result[0].constructor.name == 'RowDataPacket'))
+									// Return these
+									rowDataPackets = rowDataPackets.concat(result);
+
+							// Done
+							resolve(rowDataPackets);
+						} else
 							// Error
 							reject(error);
 					})
@@ -328,6 +337,12 @@ console.log("SQL: ", sql);
 							})()});
 		
 		return results;
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	queueCreateDatabase(database) {
+		// Push statement
+		this.statements.push('CREATE DATABASE `' + database + '`;');
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
