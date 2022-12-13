@@ -268,17 +268,19 @@ module.exports = class StatementPerformer {
 							if (!Array.isArray(results))
 								// Done
 								resolve(results);
-							
-							var	rowDataPackets = [];
-							for (let result of results.map(item => Array.isArray(item) ? item : [item]))
-								// Check this result
-								if ((result.length > 0) && (typeof result[0] == 'object') &&
-										(result[0].constructor.name == 'RowDataPacket'))
-									// Return these
-									rowDataPackets = rowDataPackets.concat(result);
+							else {
+								// Process array
+								var	rowDataPackets = [];
+								for (let result of results.map(item => Array.isArray(item) ? item : [item]))
+									// Check this result
+									if ((result.length > 0) && (typeof result[0] == 'object') &&
+											(result[0].constructor.name == 'RowDataPacket'))
+										// Return these
+										rowDataPackets = rowDataPackets.concat(result);
 
-							// Done
-							resolve(rowDataPackets);
+								// Done
+								resolve(rowDataPackets);
+							}
 						} else
 							// Error
 							reject(error);
