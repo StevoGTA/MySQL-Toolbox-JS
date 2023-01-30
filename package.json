@@ -1,6 +1,6 @@
 {
   "name": "mysql-toolbox",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Object-oriented assistance when interacting with MySQL",
   "main": "src/index.js",
   "repository": {

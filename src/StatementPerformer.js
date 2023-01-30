@@ -365,19 +365,19 @@ module.exports = class StatementPerformer {
 				statement += 'CHAR(' + tableColumn.width + ')';
 			else if (tableColumn instanceof TableColumn.TINYINT)
 				// TINYINT
-				statement += 'INT(4)';
+				statement += 'TINYINT';
 			else if (tableColumn instanceof TableColumn.SMALLINT)
 				// SMALLINT
-				statement += 'INT(6)';
+				statement += 'SMALLINT';
 			else if (tableColumn instanceof TableColumn.MEDIUMINT)
 				// MEDIUMINT
-				statement += 'INT(8)';
+				statement += 'MEDIUMINT';
 			else if (tableColumn instanceof TableColumn.INT)
 				// INT
-				statement += 'INT(11)';
+				statement += 'INT';
 			else if (tableColumn instanceof TableColumn.BIGINT)
 				// BIGINT
-				statement += 'INT(20)';
+				statement += 'BIGINT';
 			else if (tableColumn instanceof TableColumn.LONGBLOB)
 				// LONGBLOB
 				statement += 'LONGBLOB';
