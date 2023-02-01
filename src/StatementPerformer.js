@@ -208,11 +208,16 @@ module.exports = class StatementPerformer {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async sum(table, tableColumn, innerJoin, where) {
+	async sum(table, tableColumns, innerJoin, where) {
+		// Setup
+		let	string =
+					tableColumns.map(tableColumn => 'SUM(' + tableColumn.mySQLName + ') AS ' + tableColumn.name)
+							.join(',');
+
 		// Perform
-		let	mySQLResults = await this.select(true, table, 'SUM(' + tableColumn.mySQLName + ') AS total', innerJoin, where);
-		
-		return mySQLResults[0].total;
+		let	mySQLResults = await this.select(true, table, string, innerJoin, where);
+
+		return mySQLResults[0];
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
