@@ -298,7 +298,10 @@ module.exports = class StatementPerformer {
 		}
 		
 		// Done
-		if ((--this.keepOpenLevel == 0) || (performError && destroyConnectionOnError)) {
+		if (this.keepOpenLevel > 0)
+			// One less level
+			this.keepOpenLevel--;
+		if ((this.keepOpenLevel == 0) || (performError && destroyConnectionOnError)) {
 			// All done
 			this.keepOpenLevel = 0;
 			this.needUSE = true;
