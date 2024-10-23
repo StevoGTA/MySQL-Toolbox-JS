@@ -429,6 +429,9 @@ module.exports = class StatementPerformer {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	queueDropTable(table) { this.statements.push('DROP TABLE ' + table.mySQLName + ';'); }
+
+	//------------------------------------------------------------------------------------------------------------------
 	queueInsertInto(table, tableColumnsAndValues) {
 		// Push statement
 		this.statements.push(
