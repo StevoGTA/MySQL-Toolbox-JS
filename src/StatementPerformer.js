@@ -429,7 +429,7 @@ module.exports = class StatementPerformer {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	queueDropTable(table) { this.statements.push('DROP TABLE ' + table.mySQLName + ';'); }
+	queueDropTable(table) { this.statements.push('DROP TABLE IF EXISTS ' + table.mySQLName + ';'); }
 
 	//------------------------------------------------------------------------------------------------------------------
 	queueInsertInto(table, tableColumnsAndValues) {
